@@ -56,7 +56,6 @@ function get_data() {
     })
 }
 
-
 async function send_email(center_name, available_capacity, available_capacity_dose1, available_capacity_dose2, pin_code) {
     let transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
@@ -98,10 +97,10 @@ function get_request_options() {
 
 setInterval(() => {
     get_data()
-}, 60000)
+}, (config.check_for_session_after_minutes * 60000))
 
 function set_email_reminder_true() {
     setTimeout(() => {
         send_email_reminder = true
-    }, 600000)
+    }, (config.dnd_email_minutes * 60000))
 }
