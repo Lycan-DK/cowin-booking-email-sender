@@ -1,7 +1,10 @@
 {
     "email_user": "your email that you generated app password for",
     "email_pass": "app password for gamil account",
-    "zipcode": "postal code of area",
+    "zipcode": [
+        "postal code of area",
+        "postal code of area 2"
+    ],
     "send_email_to": [
         "abc@gmail.com",
         "abc2@gmail.com"
@@ -9,5 +12,5 @@
     "below_age": 30,
     "dose": 1,
     "dnd_email_minutes": 10,
-    "check_for_session_after_minutes": 1
+    "check_for_session_after_seconds": 1
 }

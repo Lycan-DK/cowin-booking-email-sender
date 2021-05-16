@@ -1,90 +1,98 @@
 
-const nodemailer = require('nodemailer')
 const request = require('request')
 const moment = require('moment')
+
+const { send_email } = require('./send_email')
 const config = require('./config.json')
-let send_email_reminder = true
 
 
-
-function get_data() {
-    /** for covaxin : COVAXIN
-     * for covishield: COVISHIELD
+let zipcode_email_tracker_data = {};
+function zipcode_email_tracker() {
+    /**
+     * This function creates populate zipcode_email_tracker_data. 
+     * This object tracks whether you have already sent email for cowin search for zipcode or not. helps in avoiding overflooding of emails
      */
-    request(get_request_options(), function (err, res, body) {
+    for (let zipcode of config.zipcode) {
+        zipcode_email_tracker_data[`${zipcode}`] = true
+    }
+}
+zipcode_email_tracker()
+
+function search_cowin_data_for_zipcode(zipcode) {
+    /** 
+     * This function makes HTTP request to cowin api and get data based on zip code 
+     * Thse filters can be later added for search of specific dose covishield: COVISHIELD for covaxin : COVAXIN
+     */
+    request(get_request_options(zipcode), async function (err, res, body) {
         if (err) {
-            console.log("Error occured : ", res.statusCode)
+            console.log("Error occured : ", err)
         }
-        if (res.statusCode < 300) {
+        if (res.statusCode < 400) {
             let cowin_search_data = JSON.parse(body);
             let centers_list = cowin_search_data.centers
+            let email_sent_in_this_session_search = false
             for (let center of centers_list) {
                 let center_name = center.address
                 for (let session of center.sessions) {
-                    if (session.min_age_limit < config.below_age) {
-                        if (session.available_capacity > 0) {
-                            if (config.dose == 1) {
-                                if (session.available_capacity_dose1 > 0) {
-                                    console.log("Send email : ", center_name, session.available_capacity, config.zipcode);
-                                    if (send_email_reminder) {
-                                        send_email(center_name, session.available_capacity, session.available_capacity_dose1, 0, config.zipcode).catch(console.error);
-                                        send_email_reminder = false;
-                                        set_email_reminder_true()
-                                    }
-                                }
-                            }
-                            else if (config.dose == 2) {
-                                if (session.available_capacity_dose2 > 0) {
-                                    console.log("Send email : ", center_name, session.available_capacity, config.zipcode);
-                                    if (send_email_reminder) {
-                                        send_email(center_name, session.available_capacity, 0, session.available_capacity_dose2, config.zipcode).catch(console.error);
-                                        send_email_reminder = false;
-                                        set_email_reminder_true()
-                                    }
-                                }
-                            }
-                            else {
-                                console.log("No Suitable session found for settings :", config.zipcode, " below age: ", config.below_age)
-                            }
-                        } else {
-                            console.log("No session found for settings :", config.zipcode, " below age: ", config.below_age)
-                        }
-                    }
+                    email_sent_in_this_session_search = await check_session_conditions(center_name, session, zipcode)
                 }
+            }
+            if (email_sent_in_this_session_search) {
+                zipcode_email_tracker_data[`${zipcode}`] = false
+                set_email_reminder_true(zipcode)
             }
         }
     })
 }
 
-async function send_email(center_name, available_capacity, available_capacity_dose1, available_capacity_dose2, pin_code) {
-    let transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false, // true for 465, false for other ports
-        auth: {
-            user: config.email_user,
-            pass: config.email_pass,
-        },
-    });
-
-    let info = await transporter.sendMail({
-        from: config.email_user,
-        to: config.send_email_to, // list of receivers
-        subject: "covid booking found ✔",
-        html: `<b>booking is open for cowin  center: ${center_name}, 
-        capicity: ${available_capacity}, 
-        capicity_dose1: ${available_capacity_dose1},
-        capicity_dose2: ${available_capacity_dose2},
-        pin_code: ${pin_code} </b>`, // html body
-    });
-
-    console.log("Message sent: %s", info.messageId);
+function check_session_conditions(center_name, session, zipcode) {
+    /**
+     * This functions check all the condition required to send email and triggers send email function
+     * returns : boolean based on email is sent or not
+     */
+    let email_sent_in_this_session_search = false
+    if (session.min_age_limit < config.below_age) {
+        if (session.available_capacity > 0) {
+            if (config.dose == 1) {
+                if (session.available_capacity_dose1 > 0) {
+                    console.log("Send email : ", center_name, session.available_capacity, zipcode);
+                    if (zipcode_email_tracker_data[`${zipcode}`]) {
+                        send_email(center_name, session.available_capacity, session.available_capacity_dose1, 0, zipcode).catch(console.error);
+                        email_sent_in_this_session_search = true;
+                    }
+                } else {
+                    console.log("Dose1 not available : ", center_name, session.available_capacity, zipcode)
+                }
+            }
+            else if (config.dose == 2) {
+                if (session.available_capacity_dose2 > 0) {
+                    console.log("Send email : ", center_name, session.available_capacity, zipcode);
+                    if (zipcode_email_tracker_data[`${zipcode}`]) {
+                        send_email(center_name, session.available_capacity, 0, session.available_capacity_dose2, zipcode).catch(console.error);
+                        email_sent_in_this_session_search = true;
+                    }
+                } else {
+                    console.log("Dose2 not available : ", center_name, session.available_capacity, zipcode)
+                }
+            }
+            else {
+                console.log("No Suitable session found for settings :", zipcode, " below age: ", config.below_age)
+            }
+        } else {
+            console.log("No session found for settings :", zipcode, " below age: ", config.below_age)
+        }
+    }
+    return email_sent_in_this_session_search
 }
 
-function get_request_options() {
+function get_request_options(zipcode) {
+    /**
+     * This function creates options for request 
+     * returns : object conatining setting for request
+     */
     let date = moment().format('DD-MM-YYYY');
     let request_options = {
-        url: `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByPin?pincode=${config.zipcode}&date=${date}`,
+        url: `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByPin?pincode=${zipcode}&date=${date}`,
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -96,11 +104,20 @@ function get_request_options() {
 }
 
 setInterval(() => {
-    get_data()
-}, (config.check_for_session_after_minutes * 60000))
+    /**
+     * This main driver function
+     * looping on all zip codes and making URL and then sending email notification
+     */
+    for (zipcode of config.zipcode) {
+        search_cowin_data_for_zipcode(zipcode)
+    }
+}, (config.check_for_session_after_seconds * 1000))
 
-function set_email_reminder_true() {
+function set_email_reminder_true(zipcode) {
+    /**
+     * This function set email reminders true again after defined minutes so your email does not overflow with same notification
+     */
     setTimeout(() => {
-        send_email_reminder = true
+        zipcode_email_tracker_data[`${zipcode}`] = true
     }, (config.dnd_email_minutes * 60000))
 }

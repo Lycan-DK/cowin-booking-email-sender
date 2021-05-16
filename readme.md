@@ -8,7 +8,10 @@ enter details
         {
         "email_user": email you generated app password for,
         "email_pass": app password you generated,
-        "zipcode": zip code / pin code of area,
+        "zipcode": [
+            "postal code of area",
+            "postal code of area 2"
+        ],
         "send_email_to": 
         [
             "abc@gmail.com",  
@@ -17,7 +20,7 @@ enter details
         "below_age": 30, // Below age like 30 60 90. 
         "dose": 1,  // which dose are you looking to get 1st(value 1) or 2nd (value 2)
         "dnd_email_minutes": 10, // after getting 1 email alert send another email alert after `n` number of minutes
-        "check_for_session_after_minutes": 1 // check for available session after every `n` number of minutes
+        "check_for_session_after_seconds": 1 // check for available session after every `n` number of seconds
     }
     ```
 5. run command : `npm test` or can also run command : `node index.js`
