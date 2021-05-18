@@ -59,7 +59,7 @@ function check_session_conditions(center_name, session, zipcode) {
                 if (session.available_capacity_dose1 > 0 && config.vaccine_list.includes(session.vaccine)) {
                     console.log("Send email : ", center_name, session.available_capacity, zipcode);
                     if (zipcode_email_tracker_data[`${zipcode}`]) {
-                        send_email(center_name, session.available_capacity, session.available_capacity_dose1, 0, zipcode).catch(console.error);
+                        send_email(center_name, session, zipcode).catch(console.error);
                         email_sent_in_this_session_search = true;
                     }
                 } else {
@@ -70,7 +70,7 @@ function check_session_conditions(center_name, session, zipcode) {
                 if (session.available_capacity_dose2 > 0 && config.vaccine_list.includes(session.vaccine)) {
                     console.log("Send email : ", center_name, session.available_capacity, zipcode);
                     if (zipcode_email_tracker_data[`${zipcode}`]) {
-                        send_email(center_name, session.available_capacity, 0, session.available_capacity_dose2, zipcode).catch(console.error);
+                        send_email(center_name, session, zipcode).catch(console.error);
                         email_sent_in_this_session_search = true;
                     }
                 } else {
