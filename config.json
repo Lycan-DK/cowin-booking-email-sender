@@ -12,5 +12,9 @@
     "below_age": 30,
     "dose": 1,
     "dnd_email_minutes": 10,
-    "check_for_session_after_seconds": 1
+    "check_for_session_after_seconds": 10,
+    "vaccine_list": [
+        "COVAXIN",
+        "COVISHIELD"
+    ]
 }

@@ -21,6 +21,10 @@ enter details
         "dose": 1,  // which dose are you looking to get 1st(value 1) or 2nd (value 2)
         "dnd_email_minutes": 10, // after getting 1 email alert send another email alert after `n` number of minutes
         "check_for_session_after_seconds": 1 // check for available session after every `n` number of seconds
+        "vaccine_list": [ // vaccine you are looking for
+            "COVAXIN",
+            "COVISHIELD"
+        ]
     }
     ```
 5. run command : `npm test` or can also run command : `node index.js`

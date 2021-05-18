@@ -34,7 +34,9 @@ function search_cowin_data_for_zipcode(zipcode) {
             for (let center of centers_list) {
                 let center_name = center.address
                 for (let session of center.sessions) {
-                    email_sent_in_this_session_search = await check_session_conditions(center_name, session, zipcode)
+                    if (await check_session_conditions(center_name, session, zipcode)) {
+                        email_sent_in_this_session_search = true
+                    }
                 }
             }
             if (email_sent_in_this_session_search) {
@@ -54,25 +56,25 @@ function check_session_conditions(center_name, session, zipcode) {
     if (session.min_age_limit < config.below_age) {
         if (session.available_capacity > 0) {
             if (config.dose == 1) {
-                if (session.available_capacity_dose1 > 0) {
+                if (session.available_capacity_dose1 > 0 && config.vaccine_list.includes(session.vaccine)) {
                     console.log("Send email : ", center_name, session.available_capacity, zipcode);
                     if (zipcode_email_tracker_data[`${zipcode}`]) {
                         send_email(center_name, session.available_capacity, session.available_capacity_dose1, 0, zipcode).catch(console.error);
                         email_sent_in_this_session_search = true;
                     }
                 } else {
-                    console.log("Dose1 not available : ", center_name, session.available_capacity, zipcode)
+                    console.log("Dose1 not available : ", center_name, session.available_capacity, zipcode, session.vaccine)
                 }
             }
             else if (config.dose == 2) {
-                if (session.available_capacity_dose2 > 0) {
+                if (session.available_capacity_dose2 > 0 && config.vaccine_list.includes(session.vaccine)) {
                     console.log("Send email : ", center_name, session.available_capacity, zipcode);
                     if (zipcode_email_tracker_data[`${zipcode}`]) {
                         send_email(center_name, session.available_capacity, 0, session.available_capacity_dose2, zipcode).catch(console.error);
                         email_sent_in_this_session_search = true;
                     }
                 } else {
-                    console.log("Dose2 not available : ", center_name, session.available_capacity, zipcode)
+                    console.log("Dose2 not available : ", center_name, session.available_capacity, zipcode, session.vaccine)
                 }
             }
             else {
